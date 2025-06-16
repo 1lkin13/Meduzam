@@ -10,6 +10,14 @@ export default function MeduzaPage() {
   const [activeSection, setActiveSection] = useState<string>("shishalar")
   const [isScrolled, setIsScrolled] = useState<boolean>(false)
   const data = menuData[currentLang]
+  const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>({})
+  const [cardsLoading, setCardsLoading] = useState(true)
+
+  useEffect(() => {
+    setCardsLoading(true)
+    const timer = setTimeout(() => setCardsLoading(false), 1000)
+    return () => clearTimeout(timer)
+  }, [currentLang])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -167,59 +175,76 @@ export default function MeduzaPage() {
 
             {/* Items Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {category.items.map((item, itemIndex) => (
-                <div
-                  key={itemIndex}
-                  className="group relative bg-gradient-to-br from-stone-800/70 to-stone-900/70 backdrop-blur-sm rounded-3xl p-6 border border-stone-700/60 hover:border-amber-600/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-amber-700/20 animate-fade-in-up cursor-pointer"
-                  style={{ animationDelay: `${itemIndex * 0.1}s` }}
-                  onClick={() => openWhatsApp()}
-                >
-                  {/* Image */}
-                  <div className="relative mb-6 overflow-hidden rounded-2xl border border-stone-600/30">
-                    <img
-                      src={item.image || "/placeholder.svg"}
-                      alt={item.name}
-                      className="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-amber-100 group-hover:text-amber-300 transition-colors duration-300">
-                      {item.name}
-                    </h3>
-                    <p className="text-stone-400 leading-relaxed">{item.description}</p>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2">
-                      {item.seafood && (
-                        <span className="px-3 py-1 bg-blue-600/30 text-blue-300 text-xs rounded-full border border-blue-500/40">
-                        🐟 {data.labels.seafood}
-                        </span>
-                      )}
-                      {item.spicy && (
-                        <span className="px-3 py-1 bg-red-700/30 text-red-300 text-xs rounded-full border border-red-600/40">
-                          🌶️ {data.labels.spicy}
-                        </span>
-                      )}
-                        {item.popular && (
-                        <span className="px-3 py-1 bg-green-700/30 text-green-300 text-xs rounded-full border border-green-600/40">
-                          😋 {data.labels.popular}
-                        </span>
-                      )}
-                      {item.alcohol && (
-                        <span className="px-3 py-1 bg-amber-700/30 text-amber-300 text-xs rounded-full border border-amber-600/40">
-                          {item.alcohol}
-                        </span>
-                      )}
+              {cardsLoading
+                ? Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="animate-pulse bg-stone-800/70 rounded-3xl p-6 min-h-[28rem] border border-stone-700/60">
+                      <div className="w-full h-72 bg-stone-700/60 rounded-2xl mb-6" />
+                      <div className="h-6 w-2/3 bg-stone-700/50 rounded mb-4" />
+                      <div className="h-4 w-full bg-stone-700/40 rounded mb-2" />
+                      <div className="h-4 w-1/2 bg-stone-700/30 rounded" />
                     </div>
-                  </div>
+                  ))
+                : category.items.map((item, itemIndex) => {
+                    const imageKey = `${category.id}-${itemIndex}`;
+                    return (
+                      <div
+                        key={itemIndex}
+                        className="group relative bg-gradient-to-br from-stone-800/70 to-stone-900/70 backdrop-blur-sm rounded-3xl p-6 border border-stone-700/60 hover:border-amber-600/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-amber-700/20 animate-fade-in-up cursor-pointer"
+                        style={{ animationDelay: `${itemIndex * 0.1}s` }}
+                        onClick={() => openWhatsApp()}
+                      >
+                        {/* Image with skeleton */}
+                        <div className="relative mb-6 overflow-hidden rounded-2xl border border-stone-600/30 flex items-center justify-center min-h-[18rem] bg-stone-800">
+                          {!imageLoaded[imageKey] && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10">
+                              <div className="w-full h-full bg-gradient-to-r from-stone-700 via-stone-800 to-stone-700 animate-pulse rounded-2xl" />
+                            </div>
+                          )}
+                          <img
+                            src={item.image || "/placeholder.svg"}
+                            alt={item.name}
+                            loading="lazy"
+                            className={`w-full h-72 object-cover transition-opacity duration-700 ${imageLoaded[imageKey] ? "opacity-100" : "opacity-0"}`}
+                            onLoad={() => setImageLoaded((prev) => ({ ...prev, [imageKey]: true }))}
+                            style={{ zIndex: 1 }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
 
-                  {/* Hover Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-700/10 to-orange-800/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                </div>
-              ))}
+                        {/* Content */}
+                        <div className="space-y-4">
+                          <h3 className="text-xl font-bold text-amber-100 group-hover:text-amber-300 transition-colors duration-300">
+                            {item.name}
+                          </h3>
+                          <p className="text-stone-400 leading-relaxed">{item.description}</p>
+
+                          {/* Tags */}
+                          <div className="flex flex-wrap gap-2">
+                            {item.seafood && (
+                              <span className="px-3 py-1 bg-blue-600/30 text-blue-300 text-xs rounded-full border border-blue-500/40">
+                              🐟 {data.labels.seafood}
+                              </span>
+                            )}
+                            {item.spicy && (
+                              <span className="px-3 py-1 bg-red-700/30 text-red-300 text-xs rounded-full border border-red-600/40">
+                                🌶️ {data.labels.spicy}
+                              </span>
+                            )}
+                              {item.popular && (
+                              <span className="px-3 py-1 bg-green-700/30 text-green-300 text-xs rounded-full border border-green-600/40">
+                                😋 {data.labels.popular}
+                              </span>
+                            )}
+                            {item.alcohol && (
+                              <span className="px-3 py-1 bg-amber-700/30 text-amber-300 text-xs rounded-full border border-amber-600/40">
+                                {item.alcohol}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
             </div>
           </div>
         </section>
